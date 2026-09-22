@@ -68,6 +68,13 @@ public class OAuth2LoginRequestFilter implements Filter {
 		String requestURI = StringUtils.defaultString(httpRequest.getRequestURI());
 		requestURI = StringUtils.removeStart(requestURI, httpRequest.getContextPath());
 		
+		// Keep the public callback URL while using the container's existing module
+		// servlet mapping. Forwarding preserves the OAuth callback parameters.
+		if ("/oauth2login".equals(requestURI)) {
+			httpRequest.getRequestDispatcher("/ms/oauth2login").forward(httpRequest, httpResponse);
+			return;
+		}
+		
 		if (!requestURIs.contains(requestURI) && !servletPaths.contains(servletPath)) {
 			
 			// Logout (forwarding)

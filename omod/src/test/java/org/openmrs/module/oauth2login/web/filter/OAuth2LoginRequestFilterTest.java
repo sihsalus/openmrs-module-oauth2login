@@ -18,6 +18,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.junit.Assert.assertEquals;
 
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -38,6 +39,7 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest(Context.class)
@@ -51,8 +53,44 @@ public class OAuth2LoginRequestFilterTest {
 		OAuth2IntegrationTest.initPathInSystemProperties("Keycloak");
 		FilterConfig filterConfig = mock(FilterConfig.class);
 		when(filterConfig.getInitParameter(eq("servletPaths"))).thenReturn("/oauth2login");
-		when(filterConfig.getInitParameter(eq("requestURIs"))).thenReturn("/ws/rest/v1/session");
+		when(filterConfig.getInitParameter(eq("requestURIs"))).thenReturn(
+		    "/ws/rest/v1/session,/ms/oauth2login,/moduleServlet/oauth2login");
 		filter.init(filterConfig);
+	}
+	
+	@Test
+	public void publicLoginUri_shouldForwardCallbackToModuleServlet() throws Exception {
+		MockHttpServletRequest request = new MockHttpServletRequest("GET", "/openmrs/oauth2login");
+		request.setContextPath("/openmrs");
+		request.setServletPath("/oauth2login");
+		request.addParameter("code", "synthetic-authorization-code");
+		request.addParameter("state", "synthetic-state");
+		MockHttpServletResponse response = new MockHttpServletResponse();
+		FilterChain chain = mock(FilterChain.class);
+		
+		filter.doFilter(request, response, chain);
+		
+		assertEquals("/ms/oauth2login", response.getForwardedUrl());
+		assertEquals("synthetic-authorization-code", request.getParameter("code"));
+		assertEquals("synthetic-state", request.getParameter("state"));
+		verifyZeroInteractions(chain);
+	}
+	
+	@Test
+	public void nativeLoginUris_shouldProceedWithoutRedirectLoop() throws Exception {
+		for (String prefix : new String[] { "/ms", "/moduleServlet" }) {
+			MockHttpServletRequest request = new MockHttpServletRequest("GET", "/openmrs" + prefix + "/oauth2login");
+			request.setContextPath("/openmrs");
+			request.setServletPath(prefix);
+			request.setPathInfo("/oauth2login");
+			HttpServletResponse response = mock(HttpServletResponse.class);
+			FilterChain chain = mock(FilterChain.class);
+			
+			filter.doFilter(request, response, chain);
+			
+			verify(chain).doFilter(request, response);
+			verifyZeroInteractions(response);
+		}
 	}
 	
 	@Test
