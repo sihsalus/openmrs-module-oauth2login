@@ -9,61 +9,18 @@
  */
 package org.openmrs.module.oauth2login.web;
 
-import java.util.EnumSet;
-
-import javax.servlet.DispatcherType;
-import javax.servlet.FilterRegistration.Dynamic;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletRegistration;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.openmrs.module.oauth2login.OAuth2LoginConstants;
-import org.springframework.stereotype.Component;
-import org.springframework.web.context.ServletContextAware;
-import org.springframework.web.context.support.XmlWebApplicationContext;
 import org.springframework.web.servlet.DispatcherServlet;
 
 /**
- * See 'Limitations' and 'Alternatives' at the below wiki page.
- * 
- * @see <a href="https://wiki.openmrs.org/display/docs/Module+Servlets">OpenMRS documentation
- *      related to Module and Servlets</a>
+ * Dispatcher managed by OpenMRS' module servlet lifecycle, including modules loaded after the web
+ * container has started during an initial installation or upgrade.
  */
-@Component
-public class CustomDispatcherServlet implements ServletContextAware {
+public class CustomDispatcherServlet extends DispatcherServlet {
 	
-	private final Log log = LogFactory.getLog(getClass());
+	private static final long serialVersionUID = 1L;
 	
-	@Override
-	public void setServletContext(ServletContext servletContext) {
-		
-		try {
-			XmlWebApplicationContext appContext = new XmlWebApplicationContext();
-			appContext.setConfigLocation("classpath*:/" + OAuth2LoginConstants.MODULE_ARTIFACT_ID
-			        + "/webApplicationContext.xml");
-			final String servletName = OAuth2LoginConstants.MODULE_ARTIFACT_ID;
-			
-			ServletRegistration servletReg = servletContext.addServlet(servletName, new DispatcherServlet(appContext));
-			servletReg.addMapping("/oauth2login");
-			
-			log.info("Servlet '" + servletName + "' with webModuleApplicationContext config added successfully.");
-			
-			Dynamic filter = servletContext.addFilter("springSecurityFilterChain",
-			    new org.springframework.web.filter.DelegatingFilterProxy());
-			filter.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST), true, "/*");
-			
-			log.info("Filter 'springSecurityFilterChain' added successfully.");
-		}
-		catch (Exception ex) {
-			// TODO need a work around for: java.lang.IllegalStateException: Started
-			// Unable to configure mapping for servlet because this servlet context has
-			// already been initialized.
-			// This happens on running openmrs after InitializationFilter or UpdateFilter
-			// hence requiring a restart to see any page other than index.htm
-			// After a restart, all mappings will then happen within
-			// Listener.contextInitialized()
-			log.error(ex.getStackTrace());
-		}
+	public CustomDispatcherServlet() {
+		setContextConfigLocation("classpath*:/" + OAuth2LoginConstants.MODULE_ARTIFACT_ID + "/webApplicationContext.xml");
 	}
 }

@@ -19,6 +19,18 @@
         <filter-name>oauth2-service-account-filter</filter-name>
         <filter-class>org.openmrs.module.oauth2login.web.filter.OAuth2ServiceAccountFilter</filter-class>
     </filter>
+	<servlet>
+		<servlet-name>oauth2login</servlet-name>
+		<servlet-class>org.openmrs.module.oauth2login.web.CustomDispatcherServlet</servlet-class>
+	</servlet>
+	<filter>
+		<filter-name>oauth2-spring-security-filter</filter-name>
+		<filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
+		<init-param>
+			<param-name>targetBeanName</param-name>
+			<param-value>springSecurityFilterChain</param-value>
+		</init-param>
+	</filter>
 	<filter>
 		<filter-name>oauth2-request-filter</filter-name>
 		<filter-class>org.openmrs.module.oauth2login.web.filter.OAuth2LoginRequestFilter</filter-class>
@@ -30,7 +42,7 @@
 		<init-param>
 			<param-name>requestURIs</param-name>
 			<!-- Comma separated list of URIs that should not be filtered-->
-			<param-value>/ws/rest/v1/session</param-value>
+			<param-value>/ws/rest/v1/session,/ms/oauth2login,/moduleServlet/oauth2login</param-value>
 		</init-param>
 	</filter>
 
@@ -38,6 +50,10 @@
         <filter-name>oauth2-service-account-filter</filter-name>
         <url-pattern>/*</url-pattern>
     </filter-mapping>
+	<filter-mapping>
+		<filter-name>oauth2-spring-security-filter</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
 	<filter-mapping>
 		<filter-name>oauth2-request-filter</filter-name>
 		<url-pattern>/*</url-pattern>

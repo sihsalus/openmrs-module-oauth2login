@@ -27,6 +27,7 @@ import org.openmrs.module.DaemonToken;
 import org.openmrs.module.DaemonTokenAware;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Transactional
 @Component(AUTH_SCHEME_COMPONENT)
+@Primary
 public class OAuth2UserInfoAuthenticationScheme extends DaoAuthenticationScheme implements DaemonTokenAware {
 	
 	protected Log log = LogFactory.getLog(getClass());
